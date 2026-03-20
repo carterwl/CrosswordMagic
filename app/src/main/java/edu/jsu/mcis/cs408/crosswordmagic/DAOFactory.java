@@ -4,6 +4,9 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+
 public class DAOFactory extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "crossword.db";
@@ -11,15 +14,18 @@ public class DAOFactory extends SQLiteOpenHelper {
 
     private WordDAO wordDAO;
     private PuzzleDAO puzzleDAO;
+    private Context context;
 
     public DAOFactory(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
+        this.context = context;
         wordDAO = new WordDAO();
         puzzleDAO = new PuzzleDAO();
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
+
         db.execSQL(
                 "CREATE TABLE puzzles (" +
                         "name TEXT, " +
@@ -37,6 +43,8 @@ public class DAOFactory extends SQLiteOpenHelper {
                         "word TEXT, " +
                         "clue TEXT)"
         );
+
+        loadPuzzle(db);
     }
 
     @Override
@@ -52,5 +60,46 @@ public class DAOFactory extends SQLiteOpenHelper {
 
     public PuzzleDAO getPuzzleDAO() {
         return puzzleDAO;
+    }
+
+    private void loadPuzzle(SQLiteDatabase db) {
+
+        try {
+
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(
+                            context.getResources().openRawResource(R.raw.puzzle)
+                    )
+            );
+
+            String line;
+            boolean firstLine = true;
+
+            while ((line = reader.readLine()) != null) {
+
+                if (firstLine) {
+                    firstLine = false;
+                    continue;
+                }
+
+                String[] parts = line.trim().split("\\s+");// Break the lines into parts //
+
+                Word word = new Word(
+                        Integer.parseInt(parts[0]),
+                        Integer.parseInt(parts[1]),
+                        Integer.parseInt(parts[2]),
+                        Integer.parseInt(parts[3]),
+                        parts[4],
+                        parts[5]
+                );
+
+                wordDAO.create(db, word);
+            }
+
+            reader.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
