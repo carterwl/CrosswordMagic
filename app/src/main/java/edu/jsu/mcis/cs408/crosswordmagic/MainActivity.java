@@ -1,13 +1,13 @@
 package edu.jsu.mcis.cs408.crosswordmagic;
-import edu.jsu.mcis.cs408.crosswordmagic.view.PuzzleFragment;
 
-import edu.jsu.mcis.cs408.crosswordmagic.ClueFragment;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.tabs.TabLayout;
+
+import edu.jsu.mcis.cs408.crosswordmagic.PuzzleFragment;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -48,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
     private void showFragment(Fragment fragment) {
         getSupportFragmentManager()
                 .beginTransaction()
-                .replace(android.R.id.content, fragment)
+                .replace(R.id.fragment_container_view, fragment)
                 .commit();
     }
 

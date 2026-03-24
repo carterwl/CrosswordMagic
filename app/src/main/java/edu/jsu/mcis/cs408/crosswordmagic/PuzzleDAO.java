@@ -9,7 +9,7 @@ import java.util.Map;
 
 public class PuzzleDAO {
 
-    // INSERT puzzle (you already had this)
+
     public int create(SQLiteDatabase db, Puzzle puzzle) {
 
         ContentValues values = new ContentValues();
