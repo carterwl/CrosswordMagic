@@ -4,11 +4,13 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PuzzleDAO {
+import edu.jsu.mcis.cs408.crosswordmagic.model.PuzzleListItem;
 
+public class PuzzleDAO {
 
     public int create(SQLiteDatabase db, Puzzle puzzle) {
 
@@ -21,7 +23,6 @@ public class PuzzleDAO {
 
         return (int) db.insert("puzzles", null, values);
     }
-
 
     public Puzzle get(SQLiteDatabase db) {
 
@@ -44,5 +45,54 @@ public class PuzzleDAO {
         cursor.close();
 
         return puzzle;
+    }
+
+    public Puzzle get(SQLiteDatabase db, int puzzleid) {
+
+        Cursor cursor = db.rawQuery(
+                "SELECT * FROM puzzles WHERE rowid = ?",
+                new String[]{String.valueOf(puzzleid)}
+        );
+
+        Puzzle puzzle = null;
+
+        if (cursor.moveToFirst()) {
+
+            Map<String, String> params = new HashMap<>();
+
+            params.put("name", cursor.getString(cursor.getColumnIndexOrThrow("name")));
+            params.put("description", cursor.getString(cursor.getColumnIndexOrThrow("description")));
+            params.put("height", String.valueOf(cursor.getInt(cursor.getColumnIndexOrThrow("height"))));
+            params.put("width", String.valueOf(cursor.getInt(cursor.getColumnIndexOrThrow("width"))));
+
+            puzzle = new Puzzle(params);
+        }
+
+        cursor.close();
+
+        return puzzle;
+    }
+
+    public PuzzleListItem[] list(SQLiteDatabase db) {
+
+        ArrayList<PuzzleListItem> puzzles = new ArrayList<>();
+
+        Cursor cursor = db.rawQuery(
+                "SELECT rowid AS id, name FROM puzzles ORDER BY name",
+                null
+        );
+
+        if (cursor.moveToFirst()) {
+            do {
+                Integer id = cursor.getInt(cursor.getColumnIndexOrThrow("id"));
+                String name = cursor.getString(cursor.getColumnIndexOrThrow("name"));
+
+                puzzles.add(new PuzzleListItem(id, name));
+            } while (cursor.moveToNext());
+        }
+
+        cursor.close();
+
+        return puzzles.toArray(new PuzzleListItem[]{});
     }
 }

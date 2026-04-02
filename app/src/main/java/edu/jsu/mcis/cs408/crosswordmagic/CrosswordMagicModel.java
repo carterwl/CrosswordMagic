@@ -8,6 +8,8 @@ import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.jsu.mcis.cs408.crosswordmagic.model.PuzzleListItem;
+
 public class CrosswordMagicModel {
 
     private PropertyChangeSupport pcs;
@@ -22,13 +24,25 @@ public class CrosswordMagicModel {
     private List<Word> words;
 
     public CrosswordMagicModel(Context context) {
+        this(context, 0);
+    }
+
+    public CrosswordMagicModel(Context context, int puzzleid) {
 
         pcs = new PropertyChangeSupport(this);
 
         DAOFactory daoFactory = new DAOFactory(context);
         SQLiteDatabase db = daoFactory.getReadableDatabase();
 
+        PuzzleDAO puzzleDAO = daoFactory.getPuzzleDAO();
         WordDAO wordDAO = daoFactory.getWordDAO();
+
+        if (puzzleid > 0) {
+            puzzleDAO.get(db, puzzleid);
+        } else {
+            puzzleDAO.get(db);
+        }
+
         words = wordDAO.getAll(db);
 
         int maxRow = 0;
@@ -65,8 +79,7 @@ public class CrosswordMagicModel {
                     letters[row][col + i] = ' ';
                 }
                 acrossList.add(w.getBox() + ": " + w.getClue());
-            }
-            else {
+            } else {
                 for (int i = 0; i < word.length(); i++) {
                     letters[row + i][col] = ' ';
                 }
@@ -115,6 +128,19 @@ public class CrosswordMagicModel {
         return downClues;
     }
 
+    public PuzzleListItem[] getPuzzleList(Context context) {
+
+        DAOFactory daoFactory = new DAOFactory(context);
+        SQLiteDatabase db = daoFactory.getReadableDatabase();
+
+        PuzzleDAO puzzleDAO = daoFactory.getPuzzleDAO();
+        PuzzleListItem[] puzzleList = puzzleDAO.list(db);
+
+        db.close();
+
+        return puzzleList;
+    }
+
     public boolean setGuess(int boxNumber, String guess) {
 
         if (guess == null || guess.trim().isEmpty()) {
@@ -138,8 +164,7 @@ public class CrosswordMagicModel {
                         for (int i = 0; i < answer.length(); i++) {
                             letters[row][col + i] = answer.charAt(i);
                         }
-                    }
-                    else {
+                    } else {
                         for (int i = 0; i < answer.length(); i++) {
                             letters[row + i][col] = answer.charAt(i);
                         }
