@@ -39,17 +39,12 @@ public class WelcomeActivity extends AppCompatActivity {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
 
-        playButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                PuzzleListItem selected = (PuzzleListItem) spinner.getSelectedItem();
+        playButton.setOnClickListener(v -> {
+            PuzzleListItem selected = (PuzzleListItem) spinner.getSelectedItem();
 
-                if (selected != null) {
-                    Intent intent = new Intent(WelcomeActivity.this, MainActivity.class);
-                    intent.putExtra("puzzleid", selected.getId());
-                    startActivity(intent);
-                }
-            }
+            Intent intent = new Intent(WelcomeActivity.this, MainActivity.class);
+            intent.putExtra("puzzleid", selected.getId());
+            startActivity(intent);
         });
     }
 }

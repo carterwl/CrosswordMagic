@@ -2,184 +2,85 @@ package edu.jsu.mcis.cs408.crosswordmagic;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
-
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
-
 import edu.jsu.mcis.cs408.crosswordmagic.model.PuzzleListItem;
-
 public class CrosswordMagicModel {
-
-    private PropertyChangeSupport pcs;
-
     private Character[][] letters;
     private Integer[][] numbers;
     private Integer[] dimensions;
-
-    private String acrossClues;
-    private String downClues;
-
+    private String acrossClues, downClues;
     private List<Word> words;
-
-    public CrosswordMagicModel(Context context) {
-        this(context, 0);
-    }
-
+    public CrosswordMagicModel(Context context) { this(context, 0); }
     public CrosswordMagicModel(Context context, int puzzleid) {
-
-        pcs = new PropertyChangeSupport(this);
-
-        DAOFactory daoFactory = new DAOFactory(context);
-        SQLiteDatabase db = daoFactory.getReadableDatabase();
-
-        PuzzleDAO puzzleDAO = daoFactory.getPuzzleDAO();
-        WordDAO wordDAO = daoFactory.getWordDAO();
-
-        // ✅ FIXED: actually get the puzzle
-        if (puzzleid > 0) {
-            puzzleDAO.get(db, puzzleid);
-        } else {
-            puzzleDAO.get(db);
-        }
-
-        // get words for puzzle
-        words = wordDAO.getAll(db);
-
-        int maxRow = 0;
-        int maxCol = 0;
-
+        DAOFactory dao = new DAOFactory(context);
+        SQLiteDatabase db = dao.getReadableDatabase();
+        if (puzzleid > 0) dao.getPuzzleDAO().get(db, puzzleid);
+        else dao.getPuzzleDAO().get(db);
+        words = dao.getWordDAO().getAll(db);
+        int maxRow = 0, maxCol = 0;
         for (Word w : words) {
             maxRow = Math.max(maxRow, w.getRow());
             maxCol = Math.max(maxCol, w.getCol());
         }
-
         letters = new Character[maxRow + 1][maxCol + 1];
         numbers = new Integer[maxRow + 1][maxCol + 1];
-
-        for (int y = 0; y <= maxRow; y++) {
-            for (int x = 0; x <= maxCol; x++) {
-                letters[y][x] = '*';
-                numbers[y][x] = 0;
+        for (int r = 0; r <= maxRow; r++)
+            for (int c = 0; c <= maxCol; c++) {
+                letters[r][c] = '*';
+                numbers[r][c] = 0;
             }
-        }
-
-        List<String> acrossList = new ArrayList<>();
-        List<String> downList = new ArrayList<>();
-
+        List<String> across = new ArrayList<>(), down = new ArrayList<>();
         for (Word w : words) {
-
-            int row = w.getRow();
-            int col = w.getCol();
+            int r = w.getRow(), c = w.getCol();
             String word = w.getWord();
-
-            numbers[row][col] = w.getBox();
-
+            numbers[r][c] = w.getBox();
             if (w.getDirection() == 0) {
-                for (int i = 0; i < word.length(); i++) {
-                    letters[row][col + i] = ' ';
-                }
-                acrossList.add(w.getBox() + ": " + w.getClue());
+                for (int i = 0; i < word.length(); i++) letters[r][c + i] = ' ';
+                across.add(w.getBox() + ": " + w.getClue());
             } else {
-                for (int i = 0; i < word.length(); i++) {
-                    letters[row + i][col] = ' ';
-                }
-                downList.add(w.getBox() + ": " + w.getClue());
+                for (int i = 0; i < word.length(); i++) letters[r + i][c] = ' ';
+                down.add(w.getBox() + ": " + w.getClue());
             }
         }
-
         dimensions = new Integer[]{letters.length, letters[0].length};
 
-        StringBuilder acrossBuilder = new StringBuilder();
-        for (String clue : acrossList) {
-            acrossBuilder.append(clue).append("\n");
-        }
-        acrossClues = acrossBuilder.toString();
+        acrossClues = "";
+        for (String s : across) acrossClues += s + "\n";
 
-        StringBuilder downBuilder = new StringBuilder();
-        for (String clue : downList) {
-            downBuilder.append(clue).append("\n");
-        }
-        downClues = downBuilder.toString();
-
+        downClues = "";
+        for (String s : down) downClues += s + "\n";
         db.close();
     }
-
-    public void addPropertyChangeListener(PropertyChangeListener listener) {
-        pcs.addPropertyChangeListener(listener);
-    }
-
-    public Character[][] getLetters() {
-        return letters;
-    }
-
-    public Integer[][] getNumbers() {
-        return numbers;
-    }
-
-    public Integer[] getDimensions() {
-        return dimensions;
-    }
-
-    public String getAcrossClues() {
-        return acrossClues;
-    }
-
-    public String getDownClues() {
-        return downClues;
-    }
-
+    public Character[][] getLetters() { return letters; }
+    public Integer[][] getNumbers() { return numbers; }
+    public Integer[] getDimensions() { return dimensions; }
+    public String getAcrossClues() { return acrossClues; }
+    public String getDownClues() { return downClues; }
 
     public PuzzleListItem[] getPuzzleList(Context context) {
-
-        DAOFactory daoFactory = new DAOFactory(context);
-        SQLiteDatabase db = daoFactory.getReadableDatabase();
-
-        PuzzleDAO puzzleDAO = daoFactory.getPuzzleDAO();
-        PuzzleListItem[] puzzleList = puzzleDAO.list(db);
-
+        DAOFactory dao = new DAOFactory(context);
+        SQLiteDatabase db = dao.getReadableDatabase();
+        PuzzleListItem[] list = dao.getPuzzleDAO().list(db);
         db.close();
-
-        return puzzleList;
+        return list;
     }
-
     public boolean setGuess(int boxNumber, String guess) {
-
-        if (guess == null || guess.trim().isEmpty()) {
-            return false;
-        }
-
-        String cleanGuess = guess.trim().toUpperCase();
-
+        if (guess == null || guess.trim().isEmpty()) return false;
+        String g = guess.trim().toUpperCase();
         for (Word w : words) {
-
             if (w.getBox() == boxNumber) {
 
                 String answer = w.getWord().toUpperCase();
-
-                if (cleanGuess.equals(answer)) {
-
-                    int row = w.getRow();
-                    int col = w.getCol();
-
-                    if (w.getDirection() == 0) {
-                        for (int i = 0; i < answer.length(); i++) {
-                            letters[row][col + i] = answer.charAt(i);
-                        }
-                    } else {
-                        for (int i = 0; i < answer.length(); i++) {
-                            letters[row + i][col] = answer.charAt(i);
-                        }
-                    }
-
-                    return true;
-                }
-
-                return false;
+                if (!g.equals(answer)) return false;
+                int r = w.getRow(), c = w.getCol();
+                if (w.getDirection() == 0)
+                    for (int i = 0; i < answer.length(); i++) letters[r][c + i] = answer.charAt(i);
+                else
+                    for (int i = 0; i < answer.length(); i++) letters[r + i][c] = answer.charAt(i);
+                return true;
             }
         }
-
         return false;
     }
 }

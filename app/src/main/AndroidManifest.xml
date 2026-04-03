@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <uses-sdk tools:overrideLibrary="androidx.activity, androidx.navigationevent"/>
 
     <application
@@ -25,6 +27,11 @@
 
         <activity
             android:name=".MainActivity"
+            android:exported="true" />
+
+
+        <activity
+            android:name=".view.MenuActivity"
             android:exported="true" />
 
     </application>

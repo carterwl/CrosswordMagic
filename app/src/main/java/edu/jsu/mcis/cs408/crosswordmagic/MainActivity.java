@@ -7,8 +7,6 @@ import androidx.fragment.app.Fragment;
 
 import com.google.android.material.tabs.TabLayout;
 
-import edu.jsu.mcis.cs408.crosswordmagic.PuzzleFragment;
-
 public class MainActivity extends AppCompatActivity {
 
     private CrosswordMagicController controller;
@@ -18,7 +16,14 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        controller = new CrosswordMagicController(this);
+        Integer puzzleid = 0;
+        Bundle extras = getIntent().getExtras();
+
+        if (extras != null) {
+            puzzleid = extras.getInt("puzzleid");
+        }
+
+        controller = new CrosswordMagicController(this, puzzleid);
 
         TabLayout tabLayout = findViewById(R.id.tabLayout);
         tabLayout.addTab(tabLayout.newTab().setText("Puzzle"));
