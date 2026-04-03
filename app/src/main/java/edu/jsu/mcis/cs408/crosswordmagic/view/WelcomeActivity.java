@@ -1,4 +1,4 @@
- package edu.jsu.mcis.cs408.crosswordmagic.view;
+package edu.jsu.mcis.cs408.crosswordmagic.view;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -9,6 +9,7 @@ import android.widget.Spinner;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import edu.jsu.mcis.cs408.crosswordmagic.CrosswordMagicModel;
 import edu.jsu.mcis.cs408.crosswordmagic.MainActivity;
 import edu.jsu.mcis.cs408.crosswordmagic.R;
 import edu.jsu.mcis.cs408.crosswordmagic.model.PuzzleListItem;
@@ -26,9 +27,8 @@ public class WelcomeActivity extends AppCompatActivity {
         spinner = findViewById(R.id.spinner_puzzles);
         playButton = findViewById(R.id.button_play);
 
-        PuzzleListItem[] puzzles = new PuzzleListItem[] {
-                new PuzzleListItem(1, "Crossword Magic")
-        };
+        CrosswordMagicModel model = new CrosswordMagicModel(this);
+        PuzzleListItem[] puzzles = model.getPuzzleList(this);
 
         ArrayAdapter<PuzzleListItem> adapter = new ArrayAdapter<>(
                 this,

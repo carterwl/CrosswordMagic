@@ -6,11 +6,13 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DAOFactory extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "crossword.db";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
 
     private WordDAO wordDAO;
     private PuzzleDAO puzzleDAO;
@@ -65,6 +67,14 @@ public class DAOFactory extends SQLiteOpenHelper {
     private void loadPuzzle(SQLiteDatabase db) {
 
         try {
+            Map<String, String> params = new HashMap<>();
+            params.put("name", "Crossword Magic");
+            params.put("description", "Sample crossword puzzle");
+            params.put("height", "0");
+            params.put("width", "0");
+
+            Puzzle puzzle = new Puzzle(params);
+            puzzleDAO.create(db, puzzle);
 
             BufferedReader reader = new BufferedReader(
                     new InputStreamReader(
@@ -82,7 +92,7 @@ public class DAOFactory extends SQLiteOpenHelper {
                     continue;
                 }
 
-                String[] parts = line.trim().split("\\s+");// Break the lines into parts //
+                String[] parts = line.trim().split("\\s+");
 
                 Word word = new Word(
                         Integer.parseInt(parts[0]),

@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "edu.jsu.mcis.cs408.crosswordmagic"
-        minSdk = 22
+        minSdk = 23
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"

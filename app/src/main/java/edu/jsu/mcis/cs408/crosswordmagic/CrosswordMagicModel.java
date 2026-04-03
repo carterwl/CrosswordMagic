@@ -37,12 +37,14 @@ public class CrosswordMagicModel {
         PuzzleDAO puzzleDAO = daoFactory.getPuzzleDAO();
         WordDAO wordDAO = daoFactory.getWordDAO();
 
+        // ✅ FIXED: actually get the puzzle
         if (puzzleid > 0) {
             puzzleDAO.get(db, puzzleid);
         } else {
             puzzleDAO.get(db);
         }
 
+        // get words for puzzle
         words = wordDAO.getAll(db);
 
         int maxRow = 0;
@@ -127,6 +129,7 @@ public class CrosswordMagicModel {
     public String getDownClues() {
         return downClues;
     }
+
 
     public PuzzleListItem[] getPuzzleList(Context context) {
 

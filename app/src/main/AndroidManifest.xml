@@ -2,8 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-sdk
-        tools:overrideLibrary="androidx.core,androidx.core.ktx,androidx.activity,androidx.navigationevent" />
+    <uses-sdk tools:overrideLibrary="androidx.activity, androidx.navigationevent"/>
 
     <application
         android:allowBackup="true"
