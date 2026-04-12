@@ -2,10 +2,13 @@ package edu.jsu.mcis.cs408.crosswordmagic;
 
 import android.content.Context;
 
-import edu.jsu.mcis.cs408.crosswordmagic.model.PuzzleListItem;
+import edu.jsu.mcis.cs408.crosswordmagic.model.CrosswordMagicModel;
+import edu.jsu.mcis.cs408.crosswordmagic.view.AbstractView;
 
 public class CrosswordMagicController extends AbstractController {
-
+    public int downloadPuzzle(int webPuzzleId) {
+        return model.downloadPuzzle(webPuzzleId);
+    }
     public static final String CLUES_ACROSS_PROPERTY = "acrossClues";
     public static final String CLUES_DOWN_PROPERTY = "downClues";
     public static final String GRID_LETTERS_PROPERTY = "gridLetters";
@@ -14,50 +17,61 @@ public class CrosswordMagicController extends AbstractController {
     public static final String PUZZLE_LIST_PROPERTY = "puzzleList";
 
     private CrosswordMagicModel model;
-    private Context context;
 
     public CrosswordMagicController(Context context) {
-        this.context = context;
         model = new CrosswordMagicModel(context);
     }
 
     public CrosswordMagicController(Context context, int puzzleid) {
-        this.context = context;
         model = new CrosswordMagicModel(context, puzzleid);
     }
 
-    public boolean setGuess(int boxNumber, String guess) {
-        boolean correct = model.setGuess(boxNumber, guess);
-
-        if (correct) {
-            setModelProperty(GRID_LETTERS_PROPERTY, model.getLetters());
-        }
-
-        return correct;
-    }
-
     public void getGridLetters() {
-        setModelProperty(GRID_LETTERS_PROPERTY, model.getLetters());
+        Character[][] oldValue = null;
+        Character[][] newValue = model.getLetters();
+        firePropertyChange(GRID_LETTERS_PROPERTY, oldValue, newValue);
     }
 
     public void getGridNumbers() {
-        setModelProperty(GRID_NUMBERS_PROPERTY, model.getNumbers());
+        Integer[][] oldValue = null;
+        Integer[][] newValue = model.getNumbers();
+        firePropertyChange(GRID_NUMBERS_PROPERTY, oldValue, newValue);
     }
 
     public void getGridDimensions() {
-        setModelProperty(GRID_DIMENSION_PROPERTY, model.getDimensions());
+        Integer[] oldValue = null;
+        Integer[] newValue = model.getDimensions();
+        firePropertyChange(GRID_DIMENSION_PROPERTY, oldValue, newValue);
     }
 
     public void getCluesAcross() {
-        setModelProperty(CLUES_ACROSS_PROPERTY, model.getAcrossClues());
+        String oldValue = null;
+        String newValue = model.getAcrossClues();
+        firePropertyChange(CLUES_ACROSS_PROPERTY, oldValue, newValue);
     }
 
     public void getCluesDown() {
-        setModelProperty(CLUES_DOWN_PROPERTY, model.getDownClues());
+        String oldValue = null;
+        String newValue = model.getDownClues();
+        firePropertyChange(CLUES_DOWN_PROPERTY, oldValue, newValue);
     }
 
-    public void getPuzzleList() {
-        PuzzleListItem[] list = model.getPuzzleList(context);
-        setModelProperty(PUZZLE_LIST_PROPERTY, list);
+    public PuzzleListItem[] getPuzzleList() {
+        PuzzleListItem[] oldValue = null;
+        PuzzleListItem[] newValue = model.getPuzzleList();
+        firePropertyChange(PUZZLE_LIST_PROPERTY, oldValue, newValue);
+        return newValue;
+    }
+
+    public boolean setGuess(int boxNumber, String guess) {
+        boolean result = model.setGuess(boxNumber, guess);
+
+        if (result) {
+            Character[][] oldValue = null;
+            Character[][] newValue = model.getLetters();
+            firePropertyChange(GRID_LETTERS_PROPERTY, oldValue, newValue);
+        }
+
+        return result;
     }
 }

@@ -1,86 +1,260 @@
-package edu.jsu.mcis.cs408.crosswordmagic;
+package edu.jsu.mcis.cs408.crosswordmagic.model;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import edu.jsu.mcis.cs408.crosswordmagic.model.PuzzleListItem;
+import java.util.Map;
+
+import edu.jsu.mcis.cs408.crosswordmagic.DAOFactory;
+import edu.jsu.mcis.cs408.crosswordmagic.Puzzle;
+import edu.jsu.mcis.cs408.crosswordmagic.PuzzleListItem;
+import edu.jsu.mcis.cs408.crosswordmagic.WebServiceDAO;
+import edu.jsu.mcis.cs408.crosswordmagic.Word;
+
 public class CrosswordMagicModel {
+
+    private Context context;
+    private int puzzleId;
+
     private Character[][] letters;
     private Integer[][] numbers;
     private Integer[] dimensions;
-    private String acrossClues, downClues;
+
+    private String acrossClues;
+    private String downClues;
+
     private List<Word> words;
-    public CrosswordMagicModel(Context context) { this(context, 0); }
-    public CrosswordMagicModel(Context context, int puzzleid) {
-        DAOFactory dao = new DAOFactory(context);
-        SQLiteDatabase db = dao.getReadableDatabase();
-        if (puzzleid > 0) dao.getPuzzleDAO().get(db, puzzleid);
-        else dao.getPuzzleDAO().get(db);
-        words = dao.getWordDAO().getAll(db);
-        int maxRow = 0, maxCol = 0;
-        for (Word w : words) {
-            maxRow = Math.max(maxRow, w.getRow());
-            maxCol = Math.max(maxCol, w.getCol());
+
+    public CrosswordMagicModel(Context context) {
+        this(context, 0);
+    }
+
+    public CrosswordMagicModel(Context context, int puzzleId) {
+
+        this.context = context;
+        this.puzzleId = (puzzleId > 0) ? puzzleId : 1;
+
+        DAOFactory daoFactory = new DAOFactory(context);
+        SQLiteDatabase db = daoFactory.getReadableDatabase();
+
+        if (puzzleId > 0) {
+            daoFactory.getPuzzleDAO().get(db, puzzleId);
+            words = daoFactory.getWordDAO().getAll(db, puzzleId);
         }
+        else {
+            daoFactory.getPuzzleDAO().get(db);
+            words = daoFactory.getWordDAO().getAll(db, 1);
+        }
+
+        int maxRow = 0;
+        int maxCol = 0;
+
+        for (Word word : words) {
+            maxRow = Math.max(maxRow, word.getRow());
+            maxCol = Math.max(maxCol, word.getCol());
+        }
+
         letters = new Character[maxRow + 1][maxCol + 1];
         numbers = new Integer[maxRow + 1][maxCol + 1];
-        for (int r = 0; r <= maxRow; r++)
-            for (int c = 0; c <= maxCol; c++) {
-                letters[r][c] = '*';
-                numbers[r][c] = 0;
-            }
-        List<String> across = new ArrayList<>(), down = new ArrayList<>();
-        for (Word w : words) {
-            int r = w.getRow(), c = w.getCol();
-            String word = w.getWord();
-            numbers[r][c] = w.getBox();
-            if (w.getDirection() == 0) {
-                for (int i = 0; i < word.length(); i++) letters[r][c + i] = ' ';
-                across.add(w.getBox() + ": " + w.getClue());
-            } else {
-                for (int i = 0; i < word.length(); i++) letters[r + i][c] = ' ';
-                down.add(w.getBox() + ": " + w.getClue());
+
+        for (int row = 0; row < letters.length; row++) {
+            for (int col = 0; col < letters[row].length; col++) {
+                letters[row][col] = ' ';
+                numbers[row][col] = 0;
             }
         }
-        dimensions = new Integer[]{letters.length, letters[0].length};
+
+        List<String> across = new ArrayList<>();
+        List<String> down = new ArrayList<>();
+
+        for (Word word : words) {
+
+            int row = word.getRow();
+            int col = word.getCol();
+            String answer = word.getWord();
+
+            numbers[row][col] = word.getBox();
+
+            if (word.getDirection() == 0) {
+                for (int i = 0; i < answer.length(); i++) {
+                    letters[row][col + i] = '_';
+                }
+                across.add(word.getBox() + ": " + word.getClue());
+            }
+            else {
+                for (int i = 0; i < answer.length(); i++) {
+                    letters[row + i][col] = '_';
+                }
+                down.add(word.getBox() + ": " + word.getClue());
+            }
+        }
+
+        dimensions = new Integer[] { letters.length, letters[0].length };
 
         acrossClues = "";
-        for (String s : across) acrossClues += s + "\n";
+        for (String clue : across) {
+            acrossClues += clue + "\n";
+        }
 
         downClues = "";
-        for (String s : down) downClues += s + "\n";
-        db.close();
-    }
-    public Character[][] getLetters() { return letters; }
-    public Integer[][] getNumbers() { return numbers; }
-    public Integer[] getDimensions() { return dimensions; }
-    public String getAcrossClues() { return acrossClues; }
-    public String getDownClues() { return downClues; }
+        for (String clue : down) {
+            downClues += clue + "\n";
+        }
 
-    public PuzzleListItem[] getPuzzleList(Context context) {
-        DAOFactory dao = new DAOFactory(context);
-        SQLiteDatabase db = dao.getReadableDatabase();
-        PuzzleListItem[] list = dao.getPuzzleDAO().list(db);
+        restoreSavedGuesses(db, daoFactory);
+
         db.close();
-        return list;
     }
+
+    public Character[][] getLetters() {
+        return letters;
+    }
+
+    public Integer[][] getNumbers() {
+        return numbers;
+    }
+
+    public Integer[] getDimensions() {
+        return dimensions;
+    }
+
+    public String getAcrossClues() {
+        return acrossClues;
+    }
+
+    public String getDownClues() {
+        return downClues;
+    }
+
+    public PuzzleListItem[] getPuzzleList() {
+        DAOFactory daoFactory = new DAOFactory(context);
+        SQLiteDatabase db = daoFactory.getReadableDatabase();
+        PuzzleListItem[] puzzles = daoFactory.getPuzzleDAO().list(db);
+        db.close();
+        return puzzles;
+    }
+
     public boolean setGuess(int boxNumber, String guess) {
-        if (guess == null || guess.trim().isEmpty()) return false;
-        String g = guess.trim().toUpperCase();
-        for (Word w : words) {
-            if (w.getBox() == boxNumber) {
 
-                String answer = w.getWord().toUpperCase();
-                if (!g.equals(answer)) return false;
-                int r = w.getRow(), c = w.getCol();
-                if (w.getDirection() == 0)
-                    for (int i = 0; i < answer.length(); i++) letters[r][c + i] = answer.charAt(i);
-                else
-                    for (int i = 0; i < answer.length(); i++) letters[r + i][c] = answer.charAt(i);
+        if (guess == null || guess.trim().isEmpty()) {
+            return false;
+        }
+
+        String userGuess = guess.trim().toUpperCase();
+
+        for (Word word : words) {
+
+            if (word.getBox() == boxNumber) {
+
+                String answer = word.getWord().toUpperCase();
+
+                if (!userGuess.equals(answer)) {
+                    continue;
+                }
+
+                fillWord(word, answer);
+                saveGuess(boxNumber, answer);
+
                 return true;
             }
         }
+
         return false;
+    }
+
+    private void fillWord(Word word, String answer) {
+
+        int row = word.getRow();
+        int col = word.getCol();
+
+        if (word.getDirection() == 0) {
+            for (int i = 0; i < answer.length(); i++) {
+                letters[row][col + i] = answer.charAt(i);
+            }
+        }
+        else {
+            for (int i = 0; i < answer.length(); i++) {
+                letters[row + i][col] = answer.charAt(i);
+            }
+        }
+    }
+
+    private void saveGuess(int boxNumber, String guess) {
+        DAOFactory daoFactory = new DAOFactory(context);
+        SQLiteDatabase db = daoFactory.getWritableDatabase();
+        daoFactory.getGuessDAO().save(db, puzzleId, boxNumber, guess);
+        db.close();
+    }
+
+    private void restoreSavedGuesses(SQLiteDatabase db, DAOFactory daoFactory) {
+
+        Map<Integer, String> guesses = daoFactory.getGuessDAO().getAll(db, puzzleId);
+
+        for (Word word : words) {
+            String savedGuess = guesses.get(word.getBox());
+
+            if (savedGuess != null && savedGuess.equalsIgnoreCase(word.getWord())) {
+                fillWord(word, savedGuess.toUpperCase());
+            }
+        }
+    }
+
+    public int downloadPuzzle(int webPuzzleId) {
+
+        int newPuzzleId = 0;
+
+        try {
+            WebServiceDAO webServiceDAO = new WebServiceDAO();
+            String response = webServiceDAO.get(webPuzzleId);
+
+            if (response == null || response.trim().isEmpty()) {
+                return 0;
+            }
+
+            JSONObject puzzleData = new JSONObject(response);
+
+            DAOFactory daoFactory = new DAOFactory(context);
+            SQLiteDatabase db = daoFactory.getWritableDatabase();
+
+            Map<String, String> params = new HashMap<>();
+            params.put("name", puzzleData.getString("name"));
+            params.put("description", puzzleData.optString("description", "Downloaded puzzle"));
+            params.put("height", String.valueOf(puzzleData.optInt("height", 0)));
+            params.put("width", String.valueOf(puzzleData.optInt("width", 0)));
+
+            Puzzle puzzle = new Puzzle(params);
+            newPuzzleId = daoFactory.getPuzzleDAO().create(db, puzzle);
+
+            JSONArray wordsArray = puzzleData.getJSONArray("words");
+
+            for (int i = 0; i < wordsArray.length(); i++) {
+                JSONObject wordData = wordsArray.getJSONObject(i);
+
+                Word word = new Word(
+                        newPuzzleId,
+                        wordData.getInt("row"),
+                        wordData.getInt("col"),
+                        wordData.getInt("box"),
+                        wordData.getInt("direction"),
+                        wordData.getString("word"),
+                        wordData.getString("clue")
+                );
+
+                daoFactory.getWordDAO().create(db, word);
+            }
+
+            db.close();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return newPuzzleId;
     }
 }

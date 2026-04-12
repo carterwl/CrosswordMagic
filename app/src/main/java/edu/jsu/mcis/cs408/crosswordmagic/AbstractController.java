@@ -1,25 +1,27 @@
 package edu.jsu.mcis.cs408.crosswordmagic;
 
-import java.beans.PropertyChangeEvent;
-import java.util.ArrayList;
-import java.util.List;
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 
 import edu.jsu.mcis.cs408.crosswordmagic.view.AbstractView;
 
 public abstract class AbstractController {
 
-    protected List<AbstractView> views = new ArrayList<>();
+    private PropertyChangeSupport propertyChangeSupport;
 
-    public void addView(AbstractView view) {
-        views.add(view);
+    public AbstractController() {
+        propertyChangeSupport = new PropertyChangeSupport(this);
     }
 
-    protected void setModelProperty(String propertyName, Object newValue) {
-        PropertyChangeEvent evt =
-                new PropertyChangeEvent(this, propertyName, null, newValue);
+    public void addView(AbstractView view) {
+        propertyChangeSupport.addPropertyChangeListener(view);
+    }
 
-        for (AbstractView view : views) {
-            view.propertyChange(evt);
-        }
+    public void removeView(AbstractView view) {
+        propertyChangeSupport.removePropertyChangeListener(view);
+    }
+
+    protected void firePropertyChange(String propertyName, Object oldValue, Object newValue) {
+        propertyChangeSupport.firePropertyChange(propertyName, oldValue, newValue);
     }
 }

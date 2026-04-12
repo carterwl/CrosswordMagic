@@ -1,4 +1,4 @@
-package edu.jsu.mcis.cs408.crosswordmagic.model;
+package edu.jsu.mcis.cs408.crosswordmagic;
 
 public class PuzzleListItem {
 

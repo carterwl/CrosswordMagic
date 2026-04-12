@@ -16,11 +16,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Integer puzzleid = 0;
+        int puzzleid = 1;
         Bundle extras = getIntent().getExtras();
-
         if (extras != null) {
-            puzzleid = extras.getInt("puzzleid");
+            puzzleid = extras.getInt("puzzleid", 1);
         }
 
         controller = new CrosswordMagicController(this, puzzleid);

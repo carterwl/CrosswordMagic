@@ -13,6 +13,7 @@ public class WordDAO {
 
         ContentValues values = new ContentValues();
 
+        values.put("puzzleId", word.getPuzzleId());
         values.put("rowNum", word.getRow());
         values.put("colNum", word.getCol());
         values.put("box", word.getBox());
@@ -26,6 +27,7 @@ public class WordDAO {
     public int countWords(SQLiteDatabase db) {
 
         Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM words", null);
+
         int count = 0;
 
         if (cursor.moveToFirst()) {
@@ -33,19 +35,23 @@ public class WordDAO {
         }
 
         cursor.close();
+
         return count;
     }
 
-
-    public List<Word> getAll(SQLiteDatabase db) {
+    public List<Word> getAll(SQLiteDatabase db, int puzzleId) {
 
         List<Word> words = new ArrayList<>();
 
-        Cursor cursor = db.rawQuery("SELECT * FROM words", null);
+        Cursor cursor = db.rawQuery(
+                "SELECT * FROM words WHERE puzzleId = ?",
+                new String[] { String.valueOf(puzzleId) }
+        );
 
         while (cursor.moveToNext()) {
 
             Word word = new Word(
+                    cursor.getInt(cursor.getColumnIndexOrThrow("puzzleId")),
                     cursor.getInt(cursor.getColumnIndexOrThrow("rowNum")),
                     cursor.getInt(cursor.getColumnIndexOrThrow("colNum")),
                     cursor.getInt(cursor.getColumnIndexOrThrow("box")),
