@@ -1,17 +1,16 @@
 package edu.jsu.mcis.cs408.crosswordmagic;
+
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import java.beans.PropertyChangeEvent;
-import edu.jsu.mcis.cs408.crosswordmagic.databinding.FragmentPuzzleBinding;
-import edu.jsu.mcis.cs408.crosswordmagic.view.AbstractView;
-public class PuzzleFragment extends Fragment implements AbstractView {
-    public static final String TAG = "PuzzleFragment";
+
+public class PuzzleFragment extends Fragment {
+
     private CrosswordMagicController controller;
-    private FragmentPuzzleBinding binding;
 
     public PuzzleFragment() {
         super();
@@ -22,20 +21,16 @@ public class PuzzleFragment extends Fragment implements AbstractView {
                              ViewGroup container,
                              Bundle savedInstanceState) {
 
-        binding = FragmentPuzzleBinding.inflate(inflater, container, false);
-        return binding.getRoot();
-    }
-
-    @Override
-    public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+        View view = inflater.inflate(R.layout.fragment_puzzle, container, false);
 
         controller = ((MainActivity) requireActivity()).getController();
-        controller.addView(this);
-    }
-    @Override
-    public void propertyChange(PropertyChangeEvent evt) {
-        String name = evt.getPropertyName();
-        Object value = evt.getNewValue();
+
+        controller.getGridLetters();
+        controller.getGridNumbers();
+        controller.getGridDimensions();
+        controller.getCluesAcross();
+        controller.getCluesDown();
+
+        return view;
     }
 }

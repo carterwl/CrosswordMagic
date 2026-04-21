@@ -5,13 +5,14 @@ import android.os.Bundle;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import edu.jsu.mcis.cs408.crosswordmagic.CrosswordMagicController;
 import edu.jsu.mcis.cs408.crosswordmagic.MainActivity;
-import edu.jsu.mcis.cs408.crosswordmagic.R;
 import edu.jsu.mcis.cs408.crosswordmagic.PuzzleListItem;
+import edu.jsu.mcis.cs408.crosswordmagic.R;
 
 public class WelcomeActivity extends AppCompatActivity {
 
@@ -36,12 +37,20 @@ public class WelcomeActivity extends AppCompatActivity {
                 android.R.layout.simple_spinner_item,
                 puzzles
         );
-
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
 
         playButton.setOnClickListener(v -> {
             PuzzleListItem selected = (PuzzleListItem) spinner.getSelectedItem();
+
+            if (selected == null) {
+                Toast.makeText(
+                        WelcomeActivity.this,
+                        "No puzzle available. Download a puzzle first.",
+                        Toast.LENGTH_SHORT
+                ).show();
+                return;
+            }
 
             Intent intent = new Intent(WelcomeActivity.this, MainActivity.class);
             intent.putExtra("puzzleid", selected.getId());

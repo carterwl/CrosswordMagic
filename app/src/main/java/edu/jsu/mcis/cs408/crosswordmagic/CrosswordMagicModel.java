@@ -43,21 +43,41 @@ public class CrosswordMagicModel {
         DAOFactory daoFactory = new DAOFactory(context);
         SQLiteDatabase db = daoFactory.getReadableDatabase();
 
-        if (puzzleId > 0) {
-            daoFactory.getPuzzleDAO().get(db, puzzleId);
-            words = daoFactory.getWordDAO().getAll(db, puzzleId);
+        words = daoFactory.getWordDAO().getAll(db, this.puzzleId);
+
+        if (words == null) {
+            words = new ArrayList<>();
         }
-        else {
-            daoFactory.getPuzzleDAO().get(db);
-            words = daoFactory.getWordDAO().getAll(db, 1);
+
+        if (words.isEmpty()) {
+            letters = new Character[1][1];
+            numbers = new Integer[1][1];
+            letters[0][0] = ' ';
+            numbers[0][0] = 0;
+            dimensions = new Integer[] { 1, 1 };
+            acrossClues = "";
+            downClues = "";
+            db.close();
+            return;
         }
 
         int maxRow = 0;
         int maxCol = 0;
 
         for (Word word : words) {
-            maxRow = Math.max(maxRow, word.getRow());
-            maxCol = Math.max(maxCol, word.getCol());
+
+            int row = word.getRow();
+            int col = word.getCol();
+            String answer = word.getWord();
+
+            if (word.getDirection() == 0) {
+                maxRow = Math.max(maxRow, row);
+                maxCol = Math.max(maxCol, col + answer.length() - 1);
+            }
+            else {
+                maxRow = Math.max(maxRow, row + answer.length() - 1);
+                maxCol = Math.max(maxCol, col);
+            }
         }
 
         letters = new Character[maxRow + 1][maxCol + 1];
@@ -208,6 +228,7 @@ public class CrosswordMagicModel {
     public int downloadPuzzle(int webPuzzleId) {
 
         int newPuzzleId = 0;
+        SQLiteDatabase db = null;
 
         try {
             WebServiceDAO webServiceDAO = new WebServiceDAO();
@@ -218,12 +239,35 @@ public class CrosswordMagicModel {
             }
 
             JSONObject puzzleData = new JSONObject(response);
+            JSONArray wordsArray = null;
+
+            if (puzzleData.has("words")) {
+                wordsArray = puzzleData.getJSONArray("words");
+            }
+            else if (puzzleData.has("puzzle")) {
+                Object nested = puzzleData.get("puzzle");
+
+                if (nested instanceof JSONArray) {
+                    wordsArray = (JSONArray) nested;
+                }
+                else if (nested instanceof JSONObject) {
+                    JSONObject nestedPuzzle = (JSONObject) nested;
+
+                    if (nestedPuzzle.has("words")) {
+                        wordsArray = nestedPuzzle.getJSONArray("words");
+                    }
+                }
+            }
+
+            if (wordsArray == null || wordsArray.length() == 0) {
+                return 0;
+            }
 
             DAOFactory daoFactory = new DAOFactory(context);
-            SQLiteDatabase db = daoFactory.getWritableDatabase();
+            db = daoFactory.getWritableDatabase();
 
             Map<String, String> params = new HashMap<>();
-            params.put("name", puzzleData.getString("name"));
+            params.put("name", puzzleData.optString("name", "Downloaded Puzzle"));
             params.put("description", puzzleData.optString("description", "Downloaded puzzle"));
             params.put("height", String.valueOf(puzzleData.optInt("height", 0)));
             params.put("width", String.valueOf(puzzleData.optInt("width", 0)));
@@ -231,28 +275,29 @@ public class CrosswordMagicModel {
             Puzzle puzzle = new Puzzle(params);
             newPuzzleId = daoFactory.getPuzzleDAO().create(db, puzzle);
 
-            JSONArray wordsArray = puzzleData.getJSONArray("words");
-
             for (int i = 0; i < wordsArray.length(); i++) {
                 JSONObject wordData = wordsArray.getJSONObject(i);
 
                 Word word = new Word(
                         newPuzzleId,
-                        wordData.getInt("row"),
-                        wordData.getInt("col"),
-                        wordData.getInt("box"),
-                        wordData.getInt("direction"),
-                        wordData.getString("word"),
-                        wordData.getString("clue")
+                        wordData.optInt("row", 0),
+                        wordData.optInt("column", 0),
+                        wordData.optInt("box", 0),
+                        wordData.optInt("direction", 0),
+                        wordData.optString("word", ""),
+                        wordData.optString("clue", "")
                 );
 
                 daoFactory.getWordDAO().create(db, word);
             }
-
-            db.close();
         }
         catch (Exception e) {
             e.printStackTrace();
+        }
+        finally {
+            if (db != null) {
+                db.close();
+            }
         }
 
         return newPuzzleId;

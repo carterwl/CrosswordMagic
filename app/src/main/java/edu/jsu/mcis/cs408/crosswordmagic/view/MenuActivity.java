@@ -2,12 +2,12 @@ package edu.jsu.mcis.cs408.crosswordmagic.view;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.ListView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -19,7 +19,7 @@ import edu.jsu.mcis.cs408.crosswordmagic.WebServiceDAO;
 
 public class MenuActivity extends AppCompatActivity {
 
-    private ListView listView;
+    private RecyclerView recyclerView;
     private Button playButton;
 
     private int selectedPuzzleId = 1;
@@ -30,58 +30,88 @@ public class MenuActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_menu);
 
-        listView = findViewById(R.id.list_puzzles);
+        recyclerView = findViewById(R.id.recycler_puzzles);
         playButton = findViewById(R.id.button_play);
 
-        WebServiceDAO webServiceDAO = new WebServiceDAO();
-        JSONArray data = webServiceDAO.list();
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        String[] puzzles = new String[0];
-        puzzleIds = new int[0];
+        loadPuzzleList();
 
-        try {
-            if (data != null) {
-                puzzles = new String[data.length()];
-                puzzleIds = new int[data.length()];
+        playButton.setOnClickListener(v -> downloadAndOpenPuzzle());
+    }
 
-                for (int i = 0; i < data.length(); i++) {
-                    JSONObject puzzle = data.getJSONObject(i);
-                    puzzles[i] = puzzle.getString("name");
-                    puzzleIds[i] = puzzle.getInt("id");
+    private void loadPuzzleList() {
+        new Thread(() -> {
+
+            WebServiceDAO webServiceDAO = new WebServiceDAO();
+            JSONArray data = webServiceDAO.list();
+
+            String[] puzzles = new String[0];
+            int[] ids = new int[0];
+
+            try {
+                if (data != null) {
+                    puzzles = new String[data.length()];
+                    ids = new int[data.length()];
+
+                    for (int i = 0; i < data.length(); i++) {
+                        JSONObject puzzle = data.getJSONObject(i);
+                        puzzles[i] = puzzle.getString("name");
+                        ids[i] = puzzle.getInt("id");
+                    }
                 }
             }
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                this,
-                android.R.layout.simple_list_item_single_choice,
-                puzzles
-        );
+            String[] finalPuzzles = puzzles;
+            int[] finalIds = ids;
 
-        listView.setAdapter(adapter);
-        listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+            runOnUiThread(() -> {
+                puzzleIds = finalIds;
 
-        if (puzzles.length > 0) {
-            listView.setItemChecked(0, true);
-            selectedPuzzleId = puzzleIds[0];
-        }
+                if (puzzleIds.length > 0) {
+                    selectedPuzzleId = puzzleIds[0];
+                }
 
-        listView.setOnItemClickListener((parent, view, position, id) -> {
-            selectedPuzzleId = puzzleIds[position];
-        });
+                PuzzleAdapter adapter = new PuzzleAdapter(finalPuzzles, position -> {
+                    selectedPuzzleId = puzzleIds[position];
+                });
 
-        playButton.setOnClickListener((View v) -> {
+                recyclerView.setAdapter(adapter);
+
+                if (finalPuzzles.length == 0) {
+                    Toast.makeText(MenuActivity.this,
+                            "No puzzles found.",
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
+
+        }).start();
+    }
+
+    private void downloadAndOpenPuzzle() {
+        new Thread(() -> {
+
             CrosswordMagicController controller =
                     new CrosswordMagicController(MenuActivity.this);
 
             int databasePuzzleId = controller.downloadPuzzle(selectedPuzzleId);
 
-            Intent intent = new Intent(MenuActivity.this, MainActivity.class);
-            intent.putExtra("puzzleid", databasePuzzleId);
-            startActivity(intent);
-        });
+            runOnUiThread(() -> {
+                if (databasePuzzleId > 0) {
+                    Intent intent = new Intent(MenuActivity.this, MainActivity.class);
+                    intent.putExtra("puzzleid", databasePuzzleId);
+                    startActivity(intent);
+                }
+                else {
+                    Toast.makeText(MenuActivity.this,
+                            "Unable to download puzzle.",
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
+
+        }).start();
     }
 }

@@ -13,20 +13,23 @@ import java.util.concurrent.Future;
 
 public class WebServiceDAO {
 
-    private final String ROOT_URL =
+    private static final String ROOT_URL =
             "http://ec2-3-137-195-31.us-east-2.compute.amazonaws.com:8080/CrosswordMagicServer/puzzle";
 
     public JSONArray list() {
 
-        JSONArray result = null;
+        JSONArray result = new JSONArray();
 
         try {
             ExecutorService pool = Executors.newSingleThreadExecutor();
-            Future<String> pending = pool.submit(new CallableHTTPRequest(ROOT_URL));
-            String response = pending.get();
+            Future<String> task = pool.submit(new CallableHTTPRequest(ROOT_URL));
+
+            String response = task.get();
             pool.shutdown();
 
-            result = new JSONArray(response);
+            if (response != null && !response.trim().isEmpty()) {
+                result = new JSONArray(response);
+            }
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -37,13 +40,14 @@ public class WebServiceDAO {
 
     public String get(int id) {
 
-        String url = ROOT_URL + "?id=" + id;
         String result = "";
+        String url = ROOT_URL + "?id=" + id;
 
         try {
             ExecutorService pool = Executors.newSingleThreadExecutor();
-            Future<String> pending = pool.submit(new CallableHTTPRequest(url));
-            result = pending.get();
+            Future<String> task = pool.submit(new CallableHTTPRequest(url));
+
+            result = task.get();
             pool.shutdown();
         }
         catch (Exception e) {
@@ -55,7 +59,7 @@ public class WebServiceDAO {
 
     private static class CallableHTTPRequest implements Callable<String> {
 
-        private String urlString;
+        private final String urlString;
 
         public CallableHTTPRequest(String urlString) {
             this.urlString = urlString;
@@ -65,14 +69,16 @@ public class WebServiceDAO {
         public String call() {
 
             StringBuilder response = new StringBuilder();
+            HttpURLConnection connection = null;
+            BufferedReader reader = null;
 
             try {
                 URL url = new URL(urlString);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
 
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(conn.getInputStream())
+                reader = new BufferedReader(
+                        new InputStreamReader(connection.getInputStream())
                 );
 
                 String line;
@@ -80,11 +86,23 @@ public class WebServiceDAO {
                 while ((line = reader.readLine()) != null) {
                     response.append(line);
                 }
-
-                reader.close();
             }
             catch (Exception e) {
                 e.printStackTrace();
+            }
+            finally {
+                try {
+                    if (reader != null) {
+                        reader.close();
+                    }
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                if (connection != null) {
+                    connection.disconnect();
+                }
             }
 
             return response.toString();

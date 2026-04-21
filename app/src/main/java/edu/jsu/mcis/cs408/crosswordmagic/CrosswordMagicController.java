@@ -3,12 +3,9 @@ package edu.jsu.mcis.cs408.crosswordmagic;
 import android.content.Context;
 
 import edu.jsu.mcis.cs408.crosswordmagic.model.CrosswordMagicModel;
-import edu.jsu.mcis.cs408.crosswordmagic.view.AbstractView;
 
 public class CrosswordMagicController extends AbstractController {
-    public int downloadPuzzle(int webPuzzleId) {
-        return model.downloadPuzzle(webPuzzleId);
-    }
+
     public static final String CLUES_ACROSS_PROPERTY = "acrossClues";
     public static final String CLUES_DOWN_PROPERTY = "downClues";
     public static final String GRID_LETTERS_PROPERTY = "gridLetters";
@@ -24,6 +21,30 @@ public class CrosswordMagicController extends AbstractController {
 
     public CrosswordMagicController(Context context, int puzzleid) {
         model = new CrosswordMagicModel(context, puzzleid);
+    }
+
+    public int downloadPuzzle(int webPuzzleId) {
+        return model.downloadPuzzle(webPuzzleId);
+    }
+
+    public Character[][] getLetters() {
+        return model.getLetters();
+    }
+
+    public Integer[][] getNumbers() {
+        return model.getNumbers();
+    }
+
+    public Integer[] getDimensions() {
+        return model.getDimensions();
+    }
+
+    public String getAcrossClues() {
+        return model.getAcrossClues();
+    }
+
+    public String getDownClues() {
+        return model.getDownClues();
     }
 
     public void getGridLetters() {
